@@ -1,11 +1,15 @@
 import { AppShell } from './components/layout/AppShell'
 import { TabNavigation } from './components/layout/TabNavigation'
+import { SEO } from './components/seo'
 
 function App() {
   return (
-    <AppShell>
-      <TabNavigation />
-    </AppShell>
+    <>
+      <SEO />
+      <AppShell>
+        <TabNavigation />
+      </AppShell>
+    </>
   )
 }
 

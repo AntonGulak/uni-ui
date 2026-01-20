@@ -2,11 +2,101 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>uni-calc</title>
+
+    <!-- Primary Meta Tags -->
+    <title>UniCalc - Uniswap V3 Liquidity Calculator</title>
+    <meta name="title" content="UniCalc - Uniswap V3 Liquidity Calculator" />
+    <meta name="description" content="Professional Uniswap V3 liquidity calculator. Simulate swaps, analyze price impact, visualize liquidity distribution. Built for DeFi traders and liquidity providers." />
+    <meta name="keywords" content="Uniswap, V3, liquidity, calculator, DeFi, swap, price impact, slippage, AMM, concentrated liquidity, crypto" />
+    <meta name="author" content="UniCalc" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://uni-ui.vercel.app/" />
+    <meta property="og:title" content="UniCalc - Uniswap V3 Liquidity Calculator" />
+    <meta property="og:description" content="Professional Uniswap V3 liquidity calculator. Simulate swaps, analyze price impact, visualize liquidity distribution." />
+    <meta property="og:image" content="https://uni-ui.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="UniCalc" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://uni-ui.vercel.app/" />
+    <meta name="twitter:title" content="UniCalc - Uniswap V3 Liquidity Calculator" />
+    <meta name="twitter:description" content="Professional Uniswap V3 liquidity calculator. Simulate swaps, analyze price impact, visualize liquidity distribution." />
+    <meta name="twitter:image" content="https://uni-ui.vercel.app/og-image.png" />
+
+    <!-- Telegram Mini App -->
+    <meta name="telegram:web_app" content="true" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0d0415" />
+    <meta name="msapplication-TileColor" content="#0d0415" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://uni-ui.vercel.app/" />
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "UniCalc",
+      "alternateName": "Uniswap V3 Liquidity Calculator",
+      "description": "Professional Uniswap V3 liquidity calculator for DeFi traders and liquidity providers. Simulate swaps, analyze price impact, and visualize liquidity distribution.",
+      "url": "https://uni-ui.vercel.app/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Uniswap V3 swap simulation",
+        "Price impact analysis",
+        "Liquidity distribution visualization",
+        "Slippage calculation",
+        "Position management"
+      ],
+      "screenshot": "https://uni-ui.vercel.app/og-image.png",
+      "softwareVersion": "1.0.0",
+      "creator": {
+        "@type": "Organization",
+        "name": "UniCalc"
+      }
+    }
+    </script>
   </head>
   <body>
+    <!-- Noscript fallback for SEO -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+        <h1>UniCalc - Uniswap V3 Liquidity Calculator</h1>
+        <p>Professional tool for DeFi traders and liquidity providers.</p>
+        <p>Please enable JavaScript to use this application.</p>
+        <ul style="text-align: left; max-width: 400px; margin: 20px auto;">
+          <li>Simulate Uniswap V3 swaps</li>
+          <li>Analyze price impact and slippage</li>
+          <li>Visualize liquidity distribution</li>
+          <li>Manage virtual positions</li>
+        </ul>
+      </div>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
