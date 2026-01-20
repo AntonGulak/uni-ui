@@ -506,7 +506,7 @@ export class VirtualPool {
 
         const result = this.swap({ zeroForOne, amountSpecified: amountIn })
 
-        if (JSBI.greaterThan(result.amountOut, ZERO)) {
+        if (JSBI.greaterThan(result.amountOut, ZERO) && JSBI.greaterThan(result.amountIn, ZERO)) {
           // Normalize amounts by decimals for correct price calculation
           const decimalsIn = zeroForOne ? this.tokenA.decimals : this.tokenB.decimals
           const decimalsOut = zeroForOne ? this.tokenB.decimals : this.tokenA.decimals
@@ -514,11 +514,18 @@ export class VirtualPool {
           const amountInNorm = JSBI.toNumber(result.amountIn) / Math.pow(10, decimalsIn)
           const amountOutNorm = JSBI.toNumber(result.amountOut) / Math.pow(10, decimalsOut)
 
+          // Skip if amounts are too small (would cause numerical issues)
+          if (amountInNorm <= 0 || amountOutNorm <= 0) continue
+
           // effectivePrice = how much tokenOut per 1 tokenIn
           const effectivePrice = amountOutNorm / amountInNorm
 
           const spotPrice = zeroForOne ? initialPrice : 1 / initialPrice
           const slippagePercent = Math.abs((effectivePrice - spotPrice) / spotPrice) * 100
+
+          // Skip invalid values (NaN, Infinity, or extreme slippage > 99.9%)
+          if (!Number.isFinite(effectivePrice) || !Number.isFinite(slippagePercent)) continue
+          if (slippagePercent > 99.9) continue
 
           points.push({
             amountIn: result.amountIn,

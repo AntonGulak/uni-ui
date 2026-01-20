@@ -39,27 +39,38 @@ export function SwapCurveChart() {
     // Prepare data - normalize by actual token decimals
     const decimalsIn = tokenIn.decimals
     const data = slippageAnalysis.points
-      .filter((p) => p.slippagePercent < 100)
+      .filter((p) =>
+        p.slippagePercent < 100 &&
+        Number.isFinite(p.effectivePrice) &&
+        Number.isFinite(p.slippagePercent) &&
+        p.effectivePrice > 0
+      )
       .map((p) => ({
         amountIn: JSBI.toNumber(p.amountIn) / Math.pow(10, decimalsIn),
         effectivePrice: p.effectivePrice,
         slippage: p.slippagePercent,
       }))
+      .filter((d) => Number.isFinite(d.amountIn) && d.amountIn > 0)
       .sort((a, b) => a.amountIn - b.amountIn)
 
-    if (data.length === 0) return
+    if (data.length < 2) return
 
     // Scales
+    const xMax = d3.max(data, (d) => d.amountIn) || 1
     const xScale = d3
       .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.amountIn)!])
+      .domain([0, xMax])
       .range([0, width])
 
+    const yMin = d3.min(data, (d) => d.effectivePrice) || 0
+    const yMax = d3.max(data, (d) => d.effectivePrice) || 1
+    // Ensure valid domain (min != max)
+    const yPadding = yMax === yMin ? yMax * 0.1 || 0.1 : 0
     const yScale = d3
       .scaleLinear()
       .domain([
-        d3.min(data, (d) => d.effectivePrice)! * 0.95,
-        d3.max(data, (d) => d.effectivePrice)! * 1.02,
+        (yMin - yPadding) * 0.95,
+        (yMax + yPadding) * 1.02,
       ])
       .range([height, 0])
 
@@ -261,6 +272,11 @@ export function SwapCurveChart() {
         {!slippageAnalysis || slippageAnalysis.points.length === 0 ? (
           <div className="h-[240px] flex items-center justify-center text-[var(--text-muted)]">
             Add liquidity to see price impact curve
+          </div>
+        ) : slippageAnalysis.points.filter(p => p.slippagePercent < 100 && Number.isFinite(p.effectivePrice)).length < 2 ? (
+          <div className="h-[240px] flex items-center justify-center text-[var(--text-muted)] text-center px-4">
+            Not enough liquidity for price impact analysis.<br/>
+            <span className="text-xs">Add more liquidity or reduce swap amount.</span>
           </div>
         ) : (
           <div className="relative">

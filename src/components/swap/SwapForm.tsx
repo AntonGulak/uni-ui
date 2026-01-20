@@ -27,6 +27,7 @@ export function SwapForm() {
   // Calculate effective price and slippage
   let effectivePrice = 0
   let slippagePercent = 0
+  let insufficientLiquidity = false
   const spotPrice = pool.getCurrentPrice()
 
   if (swapResult && JSBI.greaterThan(swapResult.amountIn, JSBI.BigInt(0))) {
@@ -37,12 +38,24 @@ export function SwapForm() {
     const amountInNum = JSBI.toNumber(swapResult.amountIn) / Math.pow(10, decimalsIn)
     const amountOutNum = JSBI.toNumber(swapResult.amountOut) / Math.pow(10, decimalsOut)
 
-    // effectivePrice = how much tokenOut per 1 tokenIn
-    effectivePrice = amountOutNum / amountInNum
+    // Check for insufficient liquidity
+    if (amountOutNum <= 0 || !Number.isFinite(amountOutNum)) {
+      insufficientLiquidity = true
+    } else {
+      // effectivePrice = how much tokenOut per 1 tokenIn
+      effectivePrice = amountOutNum / amountInNum
 
-    // spotPrice is tokenB/tokenA, so adjust based on direction
-    const expectedPrice = swapDirection === 'zeroForOne' ? spotPrice : 1 / spotPrice
-    slippagePercent = Math.abs((effectivePrice - expectedPrice) / expectedPrice) * 100
+      // spotPrice is tokenB/tokenA, so adjust based on direction
+      const expectedPrice = swapDirection === 'zeroForOne' ? spotPrice : 1 / spotPrice
+      slippagePercent = Math.abs((effectivePrice - expectedPrice) / expectedPrice) * 100
+
+      // Check for extreme slippage (>99% likely means insufficient liquidity)
+      if (slippagePercent > 99 || !Number.isFinite(slippagePercent)) {
+        insufficientLiquidity = true
+      }
+    }
+  } else if (swapResult && JSBI.equal(swapResult.amountOut, JSBI.BigInt(0))) {
+    insufficientLiquidity = true
   }
 
   return (
@@ -96,7 +109,7 @@ export function SwapForm() {
           />
 
           {/* Simulation result */}
-          {swapResult && (
+          {swapResult && !insufficientLiquidity && (
             <div className="space-y-3 p-4 rounded-xl bg-[var(--bg-tertiary)]">
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">Amount Out</span>
@@ -147,8 +160,15 @@ export function SwapForm() {
             </div>
           )}
 
+          {/* Warning for insufficient liquidity */}
+          {insufficientLiquidity && (
+            <div className="p-3 rounded-lg bg-[var(--neon-red)]/10 text-[var(--neon-red)] text-sm">
+              Insufficient liquidity for this swap size. Add more liquidity or reduce amount.
+            </div>
+          )}
+
           {/* Warning for high slippage */}
-          {slippagePercent > 5 && (
+          {!insufficientLiquidity && slippagePercent > 5 && (
             <div className="p-3 rounded-lg bg-[var(--neon-red)]/10 text-[var(--neon-red)] text-sm">
               High price impact! Consider reducing swap size.
             </div>
