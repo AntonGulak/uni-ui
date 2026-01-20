@@ -1,0 +1,14 @@
+{
+  "name": "uni-calc-contract-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.4",
+    "hardhat": "^2.22.0"
+  }
+}
