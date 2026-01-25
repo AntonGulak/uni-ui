@@ -35,3 +35,4 @@ contracts-test/typechain-types
 # Temp files
 *.png
 mintPosition.ts
+contracts-test/v3-core/

@@ -131,6 +131,7 @@ export function PositionsTab() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Add Liquidity Position"
+        size="xl"
       >
         <LiquidityForm onSuccess={() => setIsModalOpen(false)} />
       </Modal>

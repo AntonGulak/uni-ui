@@ -1,5 +1,5 @@
 import { AppShell } from './components/layout/AppShell'
-import { TabNavigation } from './components/layout/TabNavigation'
+import { VersionSwitcher } from './components/layout/VersionSwitcher'
 import { SEO } from './components/seo'
 
 function App() {
@@ -7,7 +7,7 @@ function App() {
     <>
       <SEO />
       <AppShell>
-        <TabNavigation />
+        <VersionSwitcher />
       </AppShell>
     </>
   )

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import JSBI from 'jsbi'
 import {
   VirtualPool,
@@ -17,9 +18,25 @@ import type {
 
 type PriceInputMode = 'price' | 'tick'
 
+// Serializable pool config for persistence
+interface PoolConfig {
+  tokenA: TokenInfo
+  tokenB: TokenInfo
+  fee: number
+  tickSpacing: number
+  initialPrice: number
+  positions: Array<{
+    tickLower: number
+    tickUpper: number
+    liquidity: string
+  }>
+}
+
 interface PoolState {
-  // Pool instance
+  // Pool instance (not persisted directly)
   pool: VirtualPool
+  // Serializable pool config for persistence
+  poolConfig: PoolConfig | null
 
   // UI state
   activeTab: 'setup' | 'liquidity' | 'swap'
@@ -86,9 +103,12 @@ interface PoolState {
   updateSlippageAnalysis: () => void
 }
 
-export const usePoolStore = create<PoolState>((set, get) => ({
+export const usePoolStore = create<PoolState>()(
+  persist(
+    (set, get) => ({
   // Initial state
   pool: new VirtualPool(),
+  poolConfig: null,
   activeTab: 'setup',
 
   tokenASymbol: 'ETH',
@@ -176,14 +196,27 @@ export const usePoolStore = create<PoolState>((set, get) => ({
       pool.initialize(priceNum)
     }
 
-    // Set tick range around current tick (±5% in tick terms)
+    // Set tick range around current tick (±10% in price terms ≈ ±1000 ticks)
+    // 10% price change = log(1.1) / log(1.0001) ≈ 953 ticks
     const currentTick = pool.tick
-    const rangeTicks = Math.round(500 / tickSpacingNum) * tickSpacingNum || tickSpacingNum * 5
+    const rangeTicks = Math.round(1000 / tickSpacingNum) * tickSpacingNum || tickSpacingNum * 10
     const newTickLower = Math.round((currentTick - rangeTicks) / tickSpacingNum) * tickSpacingNum
     const newTickUpper = Math.round((currentTick + rangeTicks) / tickSpacingNum) * tickSpacingNum
 
+    // Save pool config for persistence
+    const actualPrice = priceOverride ?? parseFloat(initialPrice)
+    const poolConfig: PoolConfig = {
+      tokenA,
+      tokenB,
+      fee: feeNum,
+      tickSpacing: tickSpacingNum,
+      initialPrice: actualPrice,
+      positions: [],
+    }
+
     set({
       pool,
+      poolConfig,
       activeTab: 'liquidity',
       tickLower: String(newTickLower),
       tickUpper: String(newTickUpper),
@@ -195,6 +228,7 @@ export const usePoolStore = create<PoolState>((set, get) => ({
   resetPool: () => {
     set({
       pool: new VirtualPool(),
+      poolConfig: null,
       activeTab: 'setup',
       liquidityDistribution: [],
       slippageAnalysis: null,
@@ -239,8 +273,19 @@ export const usePoolStore = create<PoolState>((set, get) => ({
         amount1Desired: parseAmount(amount1Num, 18),
       })
 
+      // Update poolConfig with new positions
+      const { poolConfig } = get()
+      const updatedConfig = poolConfig ? {
+        ...poolConfig,
+        positions: pool.positions.map(p => ({
+          tickLower: p.tickLower,
+          tickUpper: p.tickUpper,
+          liquidity: p.liquidity.toString(),
+        })),
+      } : null
+
       // Update state
-      set({ pool })
+      set({ pool, poolConfig: updatedConfig })
       get().updateLiquidityDistribution()
       get().updateSlippageAnalysis()
 
@@ -252,10 +297,21 @@ export const usePoolStore = create<PoolState>((set, get) => ({
   },
 
   removePosition: (id) => {
-    const { pool } = get()
+    const { pool, poolConfig } = get()
     try {
       pool.removePosition(id)
-      set({ pool })
+
+      // Update poolConfig
+      const updatedConfig = poolConfig ? {
+        ...poolConfig,
+        positions: pool.positions.map(p => ({
+          tickLower: p.tickLower,
+          tickUpper: p.tickUpper,
+          liquidity: p.liquidity.toString(),
+        })),
+      } : null
+
+      set({ pool, poolConfig: updatedConfig })
       get().updateLiquidityDistribution()
       get().updateSlippageAnalysis()
     } catch (error) {
@@ -363,4 +419,59 @@ export const usePoolStore = create<PoolState>((set, get) => ({
       }
     }
   },
-}))
+}),
+    {
+      name: 'uni-calc-storage',
+      // Only persist serializable data
+      partialize: (state) => ({
+        activeTab: state.activeTab,
+        tokenASymbol: state.tokenASymbol,
+        tokenBSymbol: state.tokenBSymbol,
+        tokenADecimals: state.tokenADecimals,
+        tokenBDecimals: state.tokenBDecimals,
+        tokenAAddress: state.tokenAAddress,
+        tokenBAddress: state.tokenBAddress,
+        fee: state.fee,
+        tickSpacing: state.tickSpacing,
+        priceInputMode: state.priceInputMode,
+        initialPrice: state.initialPrice,
+        initialTick: state.initialTick,
+        tickLower: state.tickLower,
+        tickUpper: state.tickUpper,
+        amount0: state.amount0,
+        amount1: state.amount1,
+        swapDirection: state.swapDirection,
+        swapAmount: state.swapAmount,
+        poolConfig: state.poolConfig,
+      }),
+      // Restore pool from config on rehydrate
+      onRehydrateStorage: () => (state) => {
+        if (state?.poolConfig) {
+          const { poolConfig } = state
+          const pool = new VirtualPool({
+            tokenA: poolConfig.tokenA,
+            tokenB: poolConfig.tokenB,
+            fee: poolConfig.fee,
+            tickSpacing: poolConfig.tickSpacing,
+          })
+          pool.initialize(poolConfig.initialPrice)
+
+          // Restore positions
+          for (const pos of poolConfig.positions) {
+            try {
+              pool.addLiquidityByLiquidity({
+                tickLower: pos.tickLower,
+                tickUpper: pos.tickUpper,
+                liquidity: JSBI.BigInt(pos.liquidity),
+              })
+            } catch (e) {
+              console.error('Failed to restore position:', e)
+            }
+          }
+
+          state.pool = pool
+        }
+      },
+    }
+  )
+)

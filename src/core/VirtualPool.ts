@@ -10,6 +10,7 @@ import type {
   TickLiquidityData,
   SlippageAnalysis,
   SlippagePoint,
+  GasEstimate,
 } from './types'
 import {
   ZERO,
@@ -26,6 +27,10 @@ import { SqrtPriceMath } from './SqrtPriceMath'
 import { SwapMath } from './SwapMath'
 import { LiquidityMath, maxLiquidityForAmounts } from './LiquidityMath'
 import { priceToSqrtPriceX96, sqrtPriceX96ToPrice } from './priceUtils'
+
+// Gas constants for Uniswap V3 swaps (approximate values)
+const GAS_BASE_SWAP = 105000 // Base gas for a swap transaction
+const GAS_PER_TICK_CROSSING = 18000 // Additional gas per tick crossing
 
 /**
  * Virtual Uniswap V3 Pool for simulation
@@ -198,6 +203,52 @@ export class VirtualPool {
   }
 
   /**
+   * Add liquidity to the pool with exact liquidity amount (for restoring from storage)
+   */
+  addLiquidityByLiquidity(params: {
+    tickLower: number
+    tickUpper: number
+    liquidity: JSBI
+  }): VirtualPosition {
+    if (!this.initialized) {
+      throw new Error('Pool not initialized')
+    }
+
+    let { tickLower, tickUpper, liquidity } = params
+
+    // Snap to tick spacing
+    tickLower = nearestUsableTick(tickLower, this.tickSpacing)
+    tickUpper = nearestUsableTick(tickUpper, this.tickSpacing)
+
+    if (tickLower >= tickUpper) {
+      throw new Error('tickLower must be less than tickUpper')
+    }
+    if (tickLower < MIN_TICK || tickUpper > MAX_TICK) {
+      throw new Error('Tick out of bounds')
+    }
+
+    // Update ticks
+    this.updateTick(tickLower, liquidity, false)
+    this.updateTick(tickUpper, liquidity, true)
+
+    // Update active liquidity if in range
+    if (this.tick >= tickLower && this.tick < tickUpper) {
+      this.liquidity = JSBI.add(this.liquidity, liquidity)
+    }
+
+    // Create position
+    const position: VirtualPosition = {
+      id: uuidv4(),
+      tickLower,
+      tickUpper,
+      liquidity,
+    }
+    this.positions.push(position)
+
+    return position
+  }
+
+  /**
    * Update tick data when adding/removing liquidity
    */
   private updateTick(tick: number, liquidityDelta: JSBI, upper: boolean): void {
@@ -248,7 +299,7 @@ export class VirtualPool {
     zeroForOne: boolean
     amountSpecified: JSBI
     sqrtPriceLimitX96?: JSBI
-  }): { result: SwapResult; steps: SwapStep[] } {
+  }): { result: SwapResult; steps: SwapStep[]; gasEstimate: GasEstimate } {
     if (!this.initialized) {
       throw new Error('Pool not initialized')
     }
@@ -282,6 +333,7 @@ export class VirtualPool {
 
     const exactInput = JSBI.greaterThanOrEqual(amountSpecified, ZERO)
     const steps: SwapStep[] = []
+    let tickCrossings = 0
 
     // Clone state for simulation
     let sqrtPriceX96 = this.sqrtPriceX96
@@ -363,6 +415,8 @@ export class VirtualPool {
             }
             liquidity = LiquidityMath.addDelta(liquidity, liquidityNet)
           }
+          // Count tick crossing
+          tickCrossings++
         }
         tick = zeroForOne ? tickNextClamped - 1 : tickNextClamped
       } else if (JSBI.notEqual(sqrtPriceX96, sqrtPriceStartX96)) {
@@ -390,6 +444,14 @@ export class VirtualPool {
       )
     }
 
+    // Calculate gas estimate
+    const gasEstimate: GasEstimate = {
+      totalGas: GAS_BASE_SWAP + (tickCrossings * GAS_PER_TICK_CROSSING),
+      baseGas: GAS_BASE_SWAP,
+      tickCrossings,
+      gasPerCrossing: GAS_PER_TICK_CROSSING,
+    }
+
     return {
       result: {
         amountIn,
@@ -397,8 +459,10 @@ export class VirtualPool {
         sqrtPriceX96After: sqrtPriceX96,
         tickAfter: tick,
         liquidityAfter: liquidity,
+        gasEstimate,
       },
       steps,
+      gasEstimate,
     }
   }
 

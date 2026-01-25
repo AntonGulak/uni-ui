@@ -1,4 +1,5 @@
 export { LiquidityForm } from './LiquidityForm'
+export { LiquidityTabV2 } from './LiquidityTabV2'
 export { PositionsList } from './PositionsList'
 export { LiquidityTab } from './LiquidityTab'
 export { LiquidityChart } from './LiquidityChart'

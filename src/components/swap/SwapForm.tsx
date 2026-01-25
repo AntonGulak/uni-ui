@@ -157,6 +157,26 @@ export function SwapForm() {
                   {swapResult.tickAfter}
                 </span>
               </div>
+
+              {/* Gas estimate */}
+              {swapResult.gasEstimate && (
+                <div className="pt-2 mt-2 border-t border-[var(--bg-accent)]">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-muted)]">Est. Gas</span>
+                    <span className="font-mono text-[var(--text-primary)]">
+                      ~{swapResult.gasEstimate.totalGas.toLocaleString()}
+                    </span>
+                  </div>
+                  {swapResult.gasEstimate.tickCrossings > 0 && (
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="text-[var(--text-muted)]">Tick crossings</span>
+                      <span className="font-mono text-[var(--text-secondary)]">
+                        {swapResult.gasEstimate.tickCrossings} (+{(swapResult.gasEstimate.tickCrossings * swapResult.gasEstimate.gasPerCrossing).toLocaleString()} gas)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

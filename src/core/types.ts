@@ -28,6 +28,14 @@ export interface SwapResult {
   sqrtPriceX96After: JSBI
   tickAfter: number
   liquidityAfter: JSBI
+  gasEstimate?: GasEstimate
+}
+
+export interface GasEstimate {
+  totalGas: number
+  baseGas: number
+  tickCrossings: number
+  gasPerCrossing: number
 }
 
 export interface SwapStep {

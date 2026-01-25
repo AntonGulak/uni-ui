@@ -5,9 +5,17 @@ interface ModalProps {
   onClose: () => void
   title?: string
   children: React.ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+const sizeClasses = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+}
+
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -35,7 +43,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       onMouseDown={(e) => e.target === overlayRef.current && onClose()}
     >
       <div
-        className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-primary)] shadow-2xl"
+        className={`w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-primary)] shadow-2xl`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
